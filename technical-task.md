@@ -68,7 +68,7 @@ quiz/
 
 - `feat(quiz): add quiz_engine skeleton — quiz_engine.py` с заглушками `generate_question()` и `calculate_score()`.
 
-- `chore(js): connect app.js` — подключение `static/app.js` в `base.html`; в консоль выводится тестовый вопрос.
+- `chore(js): connect app.js` — подключение `static/app.js` в `base.html`.
 Критерий приёмки: консоль браузера показывает тестовый вопрос при загрузке `/`.
 
 **Верстальщик / UI-дизайнер**
