@@ -4,23 +4,6 @@
 
 ---
 
-## Установка и запуск (Windows / PowerShell)
-
-```bash
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python app.py
-```
-Инициализировать БД (в PowerShell, в корне проекта):
-```bash
-flask --app app init-db
-```
-
-Откройте в браузере: http://127.0.0.1:5000/
-
----
-
 ## API — POST /api/submit_answer
 Описание. Сервер проверяет ответ игрока и начисляет очки в зависимости от скорости и сложности вопроса.
 
@@ -88,3 +71,4 @@ Response — 200 OK
 ## Техническое задание
 
 - [Техническое задание](technical-task.md)
+
