@@ -17,6 +17,7 @@ python app.py
 flask --app app init-db
 ```
 
+
 Откройте в браузере: http://127.0.0.1:5000/
 
 ---
@@ -88,3 +89,4 @@ Response — 200 OK
 ## Техническое задание
 
 - [Техническое задание](technical-task.md)
+
