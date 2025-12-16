@@ -19,6 +19,8 @@ function renderQuestion(q) {
     const gameEl = document.querySelector('.game-container') || (() => {
         const el = document.createElement('div');
         el.className = 'game-container';
+        el.setAttribute('role', 'main');
+        el.setAttribute('aria-label', 'Основная область игры');
         startForm.parentElement.appendChild(el);
         return el;
     })();
@@ -27,13 +29,15 @@ function renderQuestion(q) {
     if (startForm) startForm.style.display = 'none';
     
     // Собрать UI вопроса
-    let html = `<h2>${q.text}</h2>`;
-    html += '<div class="options">';
+    let html = `<div class="question-container" role="article" aria-live="polite">`;
+    html += `<h2 id="question-text">${q.text}</h2>`;
+    html += '<div class="options" role="group" aria-labelledby="question-text">';
     q.options.forEach((opt, idx) => {
-        html += `<button class="option" data-idx="${idx}">${opt}</button>`;
+        html += `<button class="option" data-idx="${idx}" type="button" aria-label="Ответ ${idx + 1}: ${opt}">${opt}</button>`;
     });
     html += '</div>';
-    html += '<div class="timer">10</div>';
+    html += '<div class="timer" role="status" aria-live="polite" aria-label="Оставшееся время">10</div>';
+    html += '</div>';
     
     gameEl.innerHTML = html;
     gameEl.style.display = 'block';
@@ -43,6 +47,14 @@ function renderQuestion(q) {
         btn.addEventListener('click', (e) => {
             const idx = parseInt(e.target.dataset.idx, 10);
             onAnswer(idx);
+        });
+        // Поддержка Enter и Space для доступности
+        btn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const idx = parseInt(e.target.dataset.idx, 10);
+                onAnswer(idx);
+            }
         });
     });
 }
@@ -118,14 +130,14 @@ async function onAnswer(selectedIdx) {
     
     const payload = {
         question_id: currentQuestion?.id,
-        answer: selectedIdx,
+        answer_index: selectedIdx,
         time_left: Math.round(timeLeft * 10) / 10
     };
     
     console.log('Submitting answer:', payload);
     
     try {
-        const res = await fetch('/api/submit_answer', {
+        const res = await fetch('/api/answer', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -140,8 +152,16 @@ async function onAnswer(selectedIdx) {
         const gameEl = document.querySelector('.game-container');
         const resultDiv = document.createElement('div');
         resultDiv.className = 'result';
-        resultDiv.textContent = data.correct ? `✓ Верно! +${data.score}` : `✗ Неверно. +0`;
+        resultDiv.textContent = data.correct ? `✓ Верно! +${data.gained_score}` : `✗ Неверно. +0`;
         gameEl.appendChild(resultDiv);
+        
+        // Показываем combo
+        if (data.combo > 0) {
+            const comboDiv = document.createElement('div');
+            comboDiv.className = 'combo-display';
+            comboDiv.textContent = `Combo: ${data.combo}`;
+            gameEl.appendChild(comboDiv);
+        }
         
         // Если есть следующий вопрос
         if (data.next_question && data.next_question.id) {
@@ -155,7 +175,15 @@ async function onAnswer(selectedIdx) {
             // Игра закончена
             console.log('Game ended');
             await new Promise(resolve => setTimeout(resolve, 1200));
-            gameEl.innerHTML = '<div class="end-message">Игра окончена! Результат сохранён.</div>';
+            const nickname = nicknameInput?.value || 'Игрок';
+            gameEl.innerHTML = `
+                <div class="end-screen">
+                    <h2>Игра окончена!</h2>
+                    <p class="player-name">Игрок: ${nickname}</p>
+                    <p class="final-score">Ваш результат: ${data.total_score} очков</p>
+                    <button onclick="location.reload()">Играть снова</button>
+                </div>
+            `;
             await refreshLeaderboard();
         }
     } catch (e) {
