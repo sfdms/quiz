@@ -2,15 +2,8 @@
 
 {% block content %}
 <h1>Quiz Marathon</h1>
-<form id="start-form" aria-label="Форма входа в игру">
-    <input 
-        type="text" 
-        id="nickname" 
-        placeholder="Введите ваш никнейм" 
-        aria-label="Никнейм игрока" 
-        aria-required="true"
-        required
-    >
-    <button type="submit" aria-label="Начать игру">Начать игру</button>
+<form id="start-form">
+    <input type="text" id="nickname" placeholder="Введите ваш никнейм" required>
+    <button type="submit">Начать игру</button>
 </form>
 {% endblock %}
