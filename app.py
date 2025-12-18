@@ -15,7 +15,7 @@ def create_app() -> Flask:
         init_db()
         print("Initialized the database.")
 
-    # регистрация очистки бд
+    # register db teardown
     init_db_app(app)
 
     @app.route("/")
@@ -43,7 +43,7 @@ def create_app() -> Flask:
             db.commit()
             user_id = cur.lastrowid
 
-        # создание игровой сессии
+        # create a game session
         cur = db.execute("INSERT INTO game_sessions (user_id, score) VALUES (?, 0)", (user_id,))
         db.commit()
         session["user_id"] = user_id
@@ -67,7 +67,7 @@ def create_app() -> Flask:
 
     @app.route('/data/questions.json')
     def serve_questions():
-        # предоставление файл с вопросами для клиентской стороны
+        # serve questions file for client-side
         import os, json
         path = os.path.join(app.root_path, 'data', 'questions.json')
         if not os.path.exists(path):
@@ -75,60 +75,51 @@ def create_app() -> Flask:
         with open(path, 'r', encoding='utf-8') as f:
             return app.response_class(f.read(), mimetype='application/json')
 
-    @app.route("/api/answer", methods=["POST"])
-    def api_answer():
-        # валидация сессии
+    @app.route("/api/submit_answer", methods=["POST"])
+    def api_submit_answer():
+        payload = request.get_json() or {}
         user_id = session.get("user_id")
         if not user_id:
             return jsonify({"error": "not logged in"}), 401
 
-        payload = request.get_json() or {}
         question_id = payload.get("question_id")
-        answer_index = payload.get("answer_index")
+        answer_index = payload.get("answer")
         try:
             time_left = float(payload.get("time_left", 0))
         except Exception:
             time_left = 0.0
 
-        # получение и валидация вопроса
         question = quiz_engine.get_question_by_id(question_id)
         if not question:
             return jsonify({"error": "question not found"}), 404
 
-        # проверка верности ответа
         correct = (answer_index == question.get("correct_index"))
-        
-        # обновление комбо в сессии
         combo = session.get("combo", 0)
         if correct:
             combo += 1
         else:
             combo = 0
-        session["combo"] = combo
 
-        # подсчет очков
         gained = quiz_engine.calculate_score(correct, time_left, question.get("difficulty", 1), combo)
         total = session.get("total_score", 0) + gained
         session["total_score"] = total
+        session["combo"] = combo
 
-        # Сохранение данных в базе данных (обновлять последнюю игровую сессию для этого пользователя)
+        # persist to latest game_session for this user
         db = get_db()
-        cur = db.execute(
-            "SELECT id, score FROM game_sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
-            (user_id,)
-        )
+        cur = db.execute("SELECT id, score FROM game_sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1", (user_id,))
         gs = cur.fetchone()
         if gs:
             new_score = gs["score"] + gained
             db.execute("UPDATE game_sessions SET score = ? WHERE id = ?", (new_score, gs["id"]))
             db.commit()
 
-        # подготовка след вопроса
+        # prepare next question (simple sequential)
         next_q = quiz_engine.next_question(question_id)
 
         return jsonify({
             "correct": correct,
-            "gained_score": gained,
+            "score": gained,
             "total_score": total,
             "combo": combo,
             "next_question": next_q,
