@@ -1,26 +1,17 @@
-<table class="leaderboard">
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>Никнейм</th>
-      <th>Очки</th>
-      <th>Комбо</th>
-      <th>Дата</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% if leaders %}
-    {% for row in leaders %}
-    <tr>
-      <td>{{ loop.index }}</td>
-      <td>{{ row['nickname'] }}</td>
-      <td>{{ row['score'] }}</td>
-      <td>{{ row['max_combo'] }}</td>
-      <td>{{ row['created_at'] }}</td>
-    </tr>
-    {% endfor %}
-  {% else %}
-    <tr><td colspan="5" class="muted">Пока нет результатов</td></tr>
-  {% endif %}
-  </tbody>
-</table>
+<div class="leaderboard-container" style="display: none;">
+  <h3>🏆 ТОП-10 игроков</h3>
+  <table class="leaderboard-table">
+    <thead>
+      <tr>
+        <th class="rank-col">#</th>
+        <th class="name-col">Никнейм</th>
+        <th class="score-col">Очки</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboard-body">
+      <tr class="loading-row">
+        <td colspan="3">Загрузка...</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
