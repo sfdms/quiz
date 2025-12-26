@@ -1,97 +1,223 @@
+// app.js для спринтов 1–2
 console.log('app.js загружен');
 
-// Находим элементы на странице
 const startForm = document.querySelector('#start-form');
 const nicknameInput = document.querySelector('#nickname');
 
-// Тестовый вопрос для разработки
-const testQuestion = {
-    id: 1,
-    text: "Столица Франции?",
-    options: ["Париж", "Лондон", "Берлин", "Мадрид"]
-};
-// Покажем тестовый вопрос в консоли при загрузке (критерий приёмки для Sprint 1)
-console.log('Тестовый вопрос:', testQuestion);
+let currentQuestion = null;
+let timeLimit = 10; // сек
+let timerId = null;
+let timeLeft = 0;
+let locked = false;
+let started = false;
 
-// Функция для отображения вопроса
-function showQuestion(question) {
-    // Создаем элементы для вопроса
-    const questionDiv = document.createElement('div');
-    questionDiv.className = 'question-container';
+function renderQuestion(q) {
+    if (!q) return;
+    currentQuestion = q;
     
-    // Добавляем текст вопроса
-    const questionText = document.createElement('h2');
-    questionText.textContent = question.text;
-    questionDiv.appendChild(questionText);
+    // Найти или создать контейнер игры
+    const gameEl = document.querySelector('.game-container') || (() => {
+        const el = document.createElement('div');
+        el.className = 'game-container';
+        startForm.parentElement.appendChild(el);
+        return el;
+    })();
     
-    // Создаем контейнер для вариантов ответа
-    const optionsDiv = document.createElement('div');
-    optionsDiv.className = 'options';
+    // Скрыть форму старта
+    if (startForm) startForm.style.display = 'none';
     
-    // Добавляем варианты ответов
-    question.options.forEach((option, index) => {
-        const button = document.createElement('button');
-        button.textContent = option;
-        button.onclick = () => onSelectOption(index);
-        optionsDiv.appendChild(button);
+    // Собрать UI вопроса
+    let html = `<h2>${q.text}</h2>`;
+    html += '<div class="options">';
+    q.options.forEach((opt, idx) => {
+        html += `<button class="option" data-idx="${idx}">${opt}</button>`;
     });
+    html += '</div>';
+    html += '<div class="timer">10</div>';
     
-    questionDiv.appendChild(optionsDiv);
+    gameEl.innerHTML = html;
+    gameEl.style.display = 'block';
     
-    // Заменяем форму на вопрос
-    const container = startForm.parentElement;
-    container.replaceChild(questionDiv, startForm);
+    // Подвешиваем клики на кнопки
+    document.querySelectorAll('.option').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const idx = parseInt(e.target.dataset.idx, 10);
+            onAnswer(idx);
+        });
+    });
 }
 
-// Обработчик отправки формы
-startForm.addEventListener('submit', function(event) {
-    event.preventDefault(); // Предотвращаем отправку формы
-    const nickname = nicknameInput.value.trim();
-    
-    if (nickname) {
-        console.log('Введен никнейм:', nickname);
-        // Показываем тестовый вопрос
-        showQuestion(testQuestion);
+function startTimer(limitSec) {
+    clearInterval(timerId);
+    timeLeft = limitSec;
+    updateTimerDisplay();
+    timerId = setInterval(() => {
+        timeLeft = Math.max(0, timeLeft - 0.1);
+        updateTimerDisplay();
+        if (timeLeft <= 0) {
+            clearInterval(timerId);
+            onAnswer(-1); // истек таймер
+        }
+    }, 100);
+}
+
+function updateTimerDisplay() {
+    const timerEl = document.querySelector('.timer');
+    if (timerEl) {
+        timerEl.textContent = Math.ceil(timeLeft);
     }
+}
+
+async function startGame(nickname) {
+    const res = await fetch('/api/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname })
+    });
+    
+    if (!res.ok) {
+        alert('Ошибка старта игры');
+        started = false;
+        const btn = startForm?.querySelector('button');
+        if (btn) btn.disabled = false;
+        if (nicknameInput) nicknameInput.disabled = false;
+        return;
+    }
+    
+    const data = await res.json();
+    console.log('Game started:', data);
+    
+    // Загружаем вопросы
+    try {
+        const qRes = await fetch('/data/questions.json');
+        if (!qRes.ok) throw new Error('Не удалось загрузить вопросы');
+        const questions = await qRes.json();
+        console.log('Loaded questions:', questions.length);
+        
+        // Показываем первый вопрос
+        if (questions.length > 0) {
+            renderQuestion(questions[0]);
+            timeLimit = 10;
+            startTimer(timeLimit);
+        } else {
+            alert('Нет вопросов');
+        }
+    } catch (e) {
+        console.error('Error loading questions:', e);
+        alert('Ошибка загрузки вопросов');
+    }
+}
+
+async function onAnswer(selectedIdx) {
+    if (locked) return;
+    locked = true;
+    clearInterval(timerId);
+    
+    // Блокируем кнопки
+    document.querySelectorAll('.option').forEach(btn => btn.disabled = true);
+    
+    const payload = {
+        question_id: currentQuestion?.id,
+        answer: selectedIdx,
+        time_left: Math.round(timeLeft * 10) / 10
+    };
+    
+    console.log('Submitting answer:', payload);
+    
+    try {
+        const res = await fetch('/api/submit_answer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) throw new Error('Ошибка ответа');
+        
+        const data = await res.json();
+        console.log('Answer response:', data);
+        
+        // Показываем результат
+        const gameEl = document.querySelector('.game-container');
+        const resultDiv = document.createElement('div');
+        resultDiv.className = 'result';
+        resultDiv.textContent = data.correct ? `✓ Верно! +${data.score}` : `✗ Неверно. +0`;
+        gameEl.appendChild(resultDiv);
+        
+        // Если есть следующий вопрос
+        if (data.next_question && data.next_question.id) {
+            console.log('Next question:', data.next_question);
+            await new Promise(resolve => setTimeout(resolve, 1200));
+            locked = false;
+            renderQuestion(data.next_question);
+            timeLimit = 10;
+            startTimer(timeLimit);
+        } else {
+            // Игра закончена
+            console.log('Game ended');
+            await new Promise(resolve => setTimeout(resolve, 1200));
+            gameEl.innerHTML = '<div class="end-message">Игра окончена! Результат сохранён.</div>';
+            await refreshLeaderboard();
+        }
+    } catch (e) {
+        console.error('Answer error:', e);
+        locked = false;
+    }
+}
+
+async function refreshLeaderboard() {
+    try {
+        const res = await fetch('/api/leaderboard');
+        if (!res.ok) return;
+        
+        const data = await res.json();
+        const leaders = data.leaderboard || [];
+        
+        // Показываем контейнер лидеров
+        const leaderboardContainer = document.querySelector('.leaderboard-container');
+        if (leaderboardContainer) {
+            leaderboardContainer.style.display = 'block';
+        }
+        
+        // Обновляем таблицу
+        const tbody = document.querySelector('.leaderboard-table tbody');
+        if (!tbody) return;
+        
+        if (leaders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3">Пока нет результатов</td></tr>';
+        } else {
+            tbody.innerHTML = leaders.map((row, idx) => `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${row.nickname}</td>
+                    <td>${row.score}</td>
+                </tr>
+            `).join('');
+        }
+    } catch (e) {
+        console.warn('Leaderboard error:', e);
+    }
+}
+
+// Обработчик формы
+startForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (started) return;
+    
+    const nick = nicknameInput?.value?.trim();
+    if (!nick) {
+        alert('Введите никнейм');
+        return;
+    }
+    
+    started = true;
+    const btn = startForm.querySelector('button');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Идёт игра...';
+    }
+    if (nicknameInput) nicknameInput.disabled = true;
+    
+    startGame(nick);
 });
 
-// Обработка выбора варианта — показываем результат inline
-function onSelectOption(selectedIndex) {
-    // Найдем контейнер с вариантами (последняя вставленная .options на странице)
-    const optionsDiv = document.querySelector('.options');
-    if (!optionsDiv) return;
-
-    // Отключаем все кнопки и подсвечиваем правильно/неправильно
-    const buttons = Array.from(optionsDiv.querySelectorAll('button'));
-    const correctIndex = testQuestion.options.indexOf('Париж') >= 0 ? 0 : 0; // корректный индекс для теста
-
-    buttons.forEach((btn, idx) => {
-        // блокируем кнопку
-        btn.disabled = true;
-        if (idx === correctIndex) {
-            btn.classList.add('correct');
-        }
-        if (idx === selectedIndex && idx !== correctIndex) {
-            btn.classList.add('wrong');
-        }
-    });
-
-    // Показываем текстовый результат под вариантами
-    let resultText = document.querySelector('.result-text');
-    if (!resultText) {
-        resultText = document.createElement('div');
-        resultText.className = 'result-text';
-        optionsDiv.parentElement.appendChild(resultText);
-    }
-
-    if (selectedIndex === correctIndex) {
-        resultText.textContent = 'Верно!';
-        resultText.classList.remove('wrong');
-        resultText.classList.add('correct');
-    } else {
-        const correctAnswer = buttons[correctIndex]?.textContent || '—';
-        resultText.textContent = 'Неверно — правильный ответ: ' + correctAnswer;
-        resultText.classList.remove('correct');
-        resultText.classList.add('wrong');
-    }
-}
+// Лидерборд загружается только после завершения игры в onAnswer()
