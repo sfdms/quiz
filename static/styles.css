@@ -93,3 +93,68 @@ button:hover {
 
 .result-text.correct { color: #22863a; }
 .result-text.wrong { color: #b31d1d; }
+/* Таблица лидеров */
+.leaderboard-container {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #dee2e6;
+}
+
+.leaderboard-container h3 {
+    margin: 0 0 15px 0;
+    text-align: center;
+    color: #333;
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.leaderboard-table thead {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.leaderboard-table th {
+    padding: 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #666;
+}
+
+.leaderboard-table tbody tr {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.leaderboard-table td {
+    padding: 10px;
+    color: #333;
+}
+
+.rank-col {
+    width: 40px;
+    text-align: center;
+}
+
+.score-col {
+    width: 80px;
+    text-align: right;
+}
+
+.loading-row {
+    text-align: center;
+    color: #999;
+}
+
+@media (max-width: 768px) {
+    .leaderboard-table {
+        font-size: 12px;
+    }
+    
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 8px;
+    }
+}
