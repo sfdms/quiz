@@ -7,7 +7,7 @@ Question = Dict[str, object]
 
 
 def _load_questions() -> List[Question]:
-    # load from data/questions.json if available
+    # загрузка вопросов из файла
     try:
         if current_app:
             base = os.path.join(current_app.root_path, "data")
@@ -90,7 +90,7 @@ def calculate_score(correct: bool, time_left: float, difficulty: int, combo: int
     if not correct:
         return 0
     base = 10 * max(1, int(difficulty))
-    # time_left is seconds remaining up to 10
+    # время вышло
     time_bonus = int(max(0, min(10.0, time_left)) * 2)  # up to 20
     combo_bonus = int(combo) * 5
     return base + time_bonus + combo_bonus

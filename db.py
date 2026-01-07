@@ -19,7 +19,7 @@ def close_db(e=None):
 
 def init_db():
     database_path = current_app.config.get("DATABASE") or os.path.join(current_app.root_path, "quiz.db")
-    # ensure directory exists (project root should exist)
+    # проверка существования директории
     dirpath = os.path.dirname(database_path)
     if dirpath:
         os.makedirs(dirpath, exist_ok=True)
