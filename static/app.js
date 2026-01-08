@@ -4,28 +4,27 @@ const startForm = document.querySelector('#start-form');
 const nicknameInput = document.querySelector('#nickname');
 
 let currentQuestion = null;
-let timeLimit = 10; // сек
+let timeLimit = 10;
 let timerId = null;
 let timeLeft = 0;
 let locked = false;
 let started = false;
+let questions = [];
+let currentQuestionIndex = 0;
 
 function renderQuestion(q) {
     if (!q) return;
     currentQuestion = q;
     
-    // Найти или создать контейнер игры
     const gameEl = document.querySelector('.game-container') || (() => {
         const el = document.createElement('div');
         el.className = 'game-container';
-        startForm.parentElement.appendChild(el);
+        document.querySelector('.container').appendChild(el);
         return el;
     })();
     
-    // Скрыть форму старта
     if (startForm) startForm.style.display = 'none';
     
-    // Собрать UI вопроса
     let html = `<h2>${q.text}</h2>`;
     html += '<div class="options">';
     q.options.forEach((opt, idx) => {
@@ -37,7 +36,6 @@ function renderQuestion(q) {
     gameEl.innerHTML = html;
     gameEl.style.display = 'block';
     
-    // Подвешиваем клики на кнопки
     document.querySelectorAll('.option').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const idx = parseInt(e.target.dataset.idx, 10);
@@ -55,7 +53,7 @@ function startTimer(limitSec) {
         updateTimerDisplay();
         if (timeLeft <= 0) {
             clearInterval(timerId);
-            onAnswer(-1); // истек таймер
+            onAnswer(-1);
         }
     }, 100);
 }
@@ -83,20 +81,14 @@ async function startGame(nickname) {
         return;
     }
     
-    const data = await res.json();
-    console.log('Game started:', data);
-    
-    // Загружаем вопросы
     try {
         const qRes = await fetch('/data/questions.json');
         if (!qRes.ok) throw new Error('Не удалось загрузить вопросы');
-        const questions = await qRes.json();
-        console.log('Loaded questions:', questions.length);
+        questions = await qRes.json();
         
-        // Показываем первый вопрос
         if (questions.length > 0) {
+            currentQuestionIndex = 0;
             renderQuestion(questions[0]);
-            timeLimit = 10;
             startTimer(timeLimit);
         } else {
             alert('Нет вопросов');
@@ -104,6 +96,7 @@ async function startGame(nickname) {
     } catch (e) {
         console.error('Error loading questions:', e);
         alert('Ошибка загрузки вопросов');
+        started = false;
     }
 }
 
@@ -112,7 +105,6 @@ async function onAnswer(selectedIdx) {
     locked = true;
     clearInterval(timerId);
     
-    // Блокируем кнопки
     document.querySelectorAll('.option').forEach(btn => btn.disabled = true);
     
     const payload = {
@@ -120,8 +112,6 @@ async function onAnswer(selectedIdx) {
         answer: selectedIdx,
         time_left: Math.round(timeLeft * 10) / 10
     };
-    
-    console.log('Submitting answer:', payload);
     
     try {
         const res = await fetch('/api/submit_answer', {
@@ -133,26 +123,20 @@ async function onAnswer(selectedIdx) {
         if (!res.ok) throw new Error('Ошибка ответа');
         
         const data = await res.json();
-        console.log('Answer response:', data);
         
-        // Показываем результат
         const gameEl = document.querySelector('.game-container');
         const resultDiv = document.createElement('div');
-        resultDiv.className = 'result';
+        resultDiv.className = data.correct ? 'result correct' : 'result wrong';
         resultDiv.textContent = data.correct ? `✓ Верно! +${data.score}` : `✗ Неверно. +0`;
         gameEl.appendChild(resultDiv);
         
-        // Если есть следующий вопрос
         if (data.next_question && data.next_question.id) {
-            console.log('Next question:', data.next_question);
             await new Promise(resolve => setTimeout(resolve, 1200));
             locked = false;
+            currentQuestionIndex++;
             renderQuestion(data.next_question);
-            timeLimit = 10;
             startTimer(timeLimit);
         } else {
-            // Игра закончена
-            console.log('Game ended');
             await new Promise(resolve => setTimeout(resolve, 1200));
             gameEl.innerHTML = '<div class="end-message">Игра окончена! Результат сохранён.</div>';
             await refreshLeaderboard();
@@ -171,13 +155,11 @@ async function refreshLeaderboard() {
         const data = await res.json();
         const leaders = data.leaderboard || [];
         
-        // Показываем контейнер лидеров
         const leaderboardContainer = document.querySelector('.leaderboard-container');
         if (leaderboardContainer) {
             leaderboardContainer.style.display = 'block';
         }
         
-        // Обновляем таблицу
         const tbody = document.querySelector('.leaderboard-table tbody');
         if (!tbody) return;
         
@@ -197,27 +179,31 @@ async function refreshLeaderboard() {
     }
 }
 
-// Обработчик формы
-startForm?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (started) return;
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.querySelector('#start-form');
+    const input = document.querySelector('#nickname');
     
-    const nick = nicknameInput?.value?.trim();
-    if (!nick) {
-        alert('Введите никнейм');
-        return;
+    if (form && input) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (started) return;
+            
+            const nick = input.value?.trim();
+            if (!nick) {
+                alert('Введите никнейм');
+                return;
+            }
+            
+            started = true;
+            const btn = form.querySelector('button');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Идёт игра...';
+            }
+            input.disabled = true;
+            
+            startGame(nick);
+        });
     }
-    
-    started = true;
-    const btn = startForm.querySelector('button');
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Идёт игра...';
-    }
-    if (nicknameInput) nicknameInput.disabled = true;
-    
-    startGame(nick);
 });
-
-// Лидерборд загружается только после завершения игры в onAnswer()
 
