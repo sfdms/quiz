@@ -1,4 +1,3 @@
-// app.js для спринтов 1–2
 console.log('app.js загружен');
 
 const startForm = document.querySelector('#start-form');
@@ -221,3 +220,4 @@ startForm?.addEventListener('submit', (e) => {
 });
 
 // Лидерборд загружается только после завершения игры в onAnswer()
+
