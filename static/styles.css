@@ -161,6 +161,11 @@ button:disabled {
     font-size: 14px;
 }
 
+.leaderboard-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
 .leaderboard-table thead {
     background: #f8f9fa;
     border-bottom: 1px solid #dee2e6;
