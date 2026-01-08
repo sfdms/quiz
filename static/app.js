@@ -155,55 +155,49 @@ async function refreshLeaderboard() {
         const data = await res.json();
         const leaders = data.leaderboard || [];
         
-        const leaderboardContainer = document.querySelector('.leaderboard-container');
-        if (leaderboardContainer) {
-            leaderboardContainer.style.display = 'block';
+        let leaderboardEl = document.querySelector('.leaderboard-table');
+        if (!leaderboardEl) {
+            leaderboardEl = document.createElement('div');
+            leaderboardEl.className = 'leaderboard-table';
+            document.querySelector('.game-container').appendChild(leaderboardEl);
         }
         
-        const tbody = document.querySelector('.leaderboard-table tbody');
-        if (!tbody) return;
-        
+        let html = '<table><thead><tr><th>#</th><th>Никнейм</th><th>Очки</th></tr></thead><tbody>';
         if (leaders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3">Пока нет результатов</td></tr>';
+            html += '<tr><td colspan="3">Пока нет результатов</td></tr>';
         } else {
-            tbody.innerHTML = leaders.map((row, idx) => `
-                <tr>
-                    <td>${idx + 1}</td>
-                    <td>${row.nickname}</td>
-                    <td>${row.score}</td>
-                </tr>
-            `).join('');
+            leaders.forEach((row, idx) => {
+                html += `<tr><td>${idx + 1}</td><td>${row.nickname}</td><td>${row.score}</td></tr>`;
+            });
         }
+        html += '</tbody></table>';
+        leaderboardEl.innerHTML = html;
     } catch (e) {
         console.warn('Leaderboard error:', e);
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.querySelector('#start-form');
-    const input = document.querySelector('#nickname');
+// Обработчик формы
+startForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (started) return;
     
-    if (form && input) {
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            if (started) return;
-            
-            const nick = input.value?.trim();
-            if (!nick) {
-                alert('Введите никнейм');
-                return;
-            }
-            
-            started = true;
-            const btn = form.querySelector('button');
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = 'Идёт игра...';
-            }
-            input.disabled = true;
-            
-            startGame(nick);
-        });
+    const nick = nicknameInput?.value?.trim();
+    if (!nick) {
+        alert('Введите никнейм');
+        return;
     }
+    
+    started = true;
+    const btn = startForm.querySelector('button');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Идёт игра...';
+    }
+    if (nicknameInput) nicknameInput.disabled = true;
+    
+    startGame(nick);
 });
 
+// Лидерборд при загрузке
+refreshLeaderboard();
