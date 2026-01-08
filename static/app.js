@@ -139,7 +139,7 @@ async function onAnswer(selectedIdx) {
         } else {
             await new Promise(resolve => setTimeout(resolve, 1200));
             gameEl.innerHTML = '<div class="end-message">Игра окончена! Результат сохранён.</div>';
-            await refreshLeaderboard();
+            await refreshLeaderboard(true);
         }
     } catch (e) {
         console.error('Answer error:', e);
@@ -147,7 +147,7 @@ async function onAnswer(selectedIdx) {
     }
 }
 
-async function refreshLeaderboard() {
+async function refreshLeaderboard(showContainer = false) {
     try {
         const res = await fetch('/api/leaderboard');
         if (!res.ok) return;
@@ -172,6 +172,12 @@ async function refreshLeaderboard() {
         }
         html += '</tbody></table>';
         leaderboardEl.innerHTML = html;
+        
+        // Показать контейнер лидерборда только если showContainer = true
+        if (showContainer) {
+            const container = document.querySelector('.leaderboard-container');
+            if (container) container.style.display = 'block';
+        }
     } catch (e) {
         console.warn('Leaderboard error:', e);
     }
