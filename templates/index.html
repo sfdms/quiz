@@ -2,17 +2,26 @@
 
 {% block content %}
 <h1>Quiz Marathon</h1>
-<form id="start-form">
-    <input type="text" id="nickname" placeholder="Введите ваш никнейм" required>
-    <button type="submit">Начать игру</button>
+<form id="start-form" aria-label="Форма начала игры">
+    <label for="nickname">Введите ваш никнейм:</label>
+    <input 
+        type="text" 
+        id="nickname" 
+        placeholder="Введите ваш никнейм" 
+        required
+        aria-required="true"
+        aria-describedby="nickname-help"
+    >
+    <small id="nickname-help" class="sr-only">Введите ваш ник для участия в турнире</small>
+    <button type="submit" aria-label="Начать игру">Начать игру</button>
 </form>
 
-<div class="leaderboard-container" style="display: none;">
+<div class="leaderboard-container" style="display: none;" aria-live="polite" aria-label="Турнирная таблица">
   <h3>🏆 ТОП-10 игроков</h3>
   <div class="leaderboard-table"></div>
 </div>
 
-<div id="initial-leaderboard" style="margin-top: 30px;">
+<div id="initial-leaderboard" style="margin-top: 30px;" aria-label="Текущая турнирная таблица">
   {% include '_leaderboard.html' %}
 </div>
 {% endblock %}
