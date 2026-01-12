@@ -2,9 +2,11 @@
 
 {% block content %}
 <h1>Правила игры</h1>
-<div>
+<div role="article">
     <p>Добро пожаловать в Quiz Marathon!</p>
     <p>Правила игры будут добавлены позже.</p>
-    <a href="{{ url_for('index') }}">Вернуться на главную</a>
+    <nav aria-label="Навигация">
+        <a href="{{ url_for('index') }}" role="button" tabindex="0">Вернуться на главную</a>
+    </nav>
 </div>
 {% endblock %}
