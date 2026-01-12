@@ -1,5 +1,18 @@
 * { box-sizing: border-box; }
 
+/* Screen reader only text */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
 body {
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     margin: 0;
@@ -22,10 +35,12 @@ h1 {
 }
 
 input, button {
-    padding: 8px;
+    padding: 12px;
     margin: 5px;
     border: 1px solid #ddd;
     border-radius: 4px;
+    font-size: 16px;
+    transition: all 0.2s ease;
 }
 
 button {
@@ -33,10 +48,26 @@ button {
     color: white;
     border: none;
     cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
 }
 
 button:hover:not(:disabled) {
     background: #0056b3;
+}
+
+button:focus {
+    outline: 2px solid #0056b3;
+    outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible) {
+    outline: none;
+}
+
+button:focus-visible {
+    outline: 2px solid #0056b3;
+    outline-offset: 2px;
 }
 
 button:disabled {
@@ -44,20 +75,74 @@ button:disabled {
     cursor: not-allowed;
 }
 
+input {
+    font-size: 16px;
+}
+
+input:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+    border-color: #007bff;
+}
+
+/* Links styled as buttons for better accessibility */
+a[role="button"] {
+    display: inline-block;
+    padding: 12px 20px;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    min-height: 44px;
+    min-width: 44px;
+    transition: all 0.2s ease;
+}
+
+a[role="button"]:hover {
+    background: #0056b3;
+}
+
+a[role="button"]:focus {
+    outline: 2px solid #0056b3;
+    outline-offset: 2px;
+}
+
+a[role="button"]:focus-visible {
+    outline: 2px solid #0056b3;
+    outline-offset: 2px;
+}
+
+/* Form labels for better accessibility */
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
 #start-form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    max-width: 300px;
+    gap: 15px;
+    max-width: 350px;
     margin: 0 auto;
 }
 
 #start-form input {
     width: 100%;
+    padding: 12px;
+    min-height: 44px;
 }
 
 #start-form button {
     width: 100%;
+    padding: 12px;
+    min-height: 44px;
+    font-size: 16px;
+    font-weight: 600;
 }
 
 .game-container {
@@ -74,25 +159,35 @@ button:disabled {
 .options {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    max-width: 400px;
+    gap: 12px;
+    max-width: 450px;
     margin: 0 auto 20px;
 }
 
 .options button {
     width: 100%;
-    padding: 12px;
+    padding: 14px;
+    min-height: 50px;
     font-size: 16px;
     background: #f8f9fa;
     color: #333;
-    border: 1px solid #dee2e6;
-    transition: all 0.2s;
+    border: 2px solid #dee2e6;
+    transition: all 0.2s ease;
+    text-align: center;
+    font-weight: 500;
 }
 
 .options button:hover:not(:disabled) {
     background: #007bff;
     color: white;
-    transform: translateY(-1px);
+    border-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.options button:focus-visible {
+    outline: 2px solid #0056b3;
+    outline-offset: 2px;
 }
 
 .options button:disabled {
@@ -100,16 +195,18 @@ button:disabled {
 }
 
 .timer {
-    display: inline-block;
-    width: 50px;
-    height: 50px;
-    line-height: 50px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: #007bff;
     color: white;
-    font-size: 18px;
+    font-size: 22px;
     font-weight: bold;
     margin: 20px 0;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
 }
 
 .result {
@@ -172,7 +269,7 @@ button:disabled {
 }
 
 .leaderboard-table th {
-    padding: 10px;
+    padding: 12px;
     text-align: left;
     font-weight: 600;
     color: #666;
@@ -183,7 +280,7 @@ button:disabled {
 }
 
 .leaderboard-table td {
-    padding: 10px;
+    padding: 12px;
     color: #333;
 }
 
@@ -203,24 +300,155 @@ button:disabled {
 }
 
 @media (max-width: 768px) {
+    body {
+        padding: 12px;
+    }
+    
     .container {
         padding: 15px;
+        border-radius: 6px;
+    }
+    
+    h1 {
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+    
+    input, button {
+        padding: 10px;
+        font-size: 16px;
+        min-height: 44px;
+    }
+    
+    #start-form {
+        gap: 12px;
+        max-width: 100%;
     }
     
     .game-container h2 {
         font-size: 18px;
+        margin-bottom: 20px;
+    }
+    
+    .options {
+        gap: 10px;
+        max-width: 100%;
     }
     
     .options button {
-        padding: 10px;
-        font-size: 14px;
+        padding: 12px;
+        font-size: 15px;
+        min-height: 48px;
     }
     
     .timer {
-        width: 40px;
-        height: 40px;
-        line-height: 40px;
+        width: 50px;
+        height: 50px;
+        font-size: 18px;
+    }
+    
+    .leaderboard-table {
+        font-size: 13px;
+    }
+    
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 10px;
+    }
+    
+    .rank-col {
+        width: 35px;
+    }
+    
+    .score-col {
+        width: 70px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 8px;
+    }
+    
+    .container {
+        padding: 12px;
+    }
+    
+    h1 {
+        font-size: 20px;
+        margin-bottom: 12px;
+    }
+    
+    input, button {
+        padding: 10px;
         font-size: 16px;
+        min-height: 44px;
+    }
+    
+    #start-form {
+        gap: 10px;
+        max-width: 100%;
+    }
+    
+    #start-form input {
+        width: 100%;
+    }
+    
+    #start-form button {
+        width: 100%;
+        font-size: 16px;
+    }
+    
+    .game-container {
+        margin-top: 15px;
+    }
+    
+    .game-container h2 {
+        font-size: 16px;
+        margin-bottom: 15px;
+        word-break: break-word;
+    }
+    
+    .options {
+        gap: 8px;
+        max-width: 100%;
+        margin-bottom: 15px;
+    }
+    
+    .options button {
+        padding: 11px;
+        font-size: 14px;
+        min-height: 46px;
+        border-radius: 4px;
+    }
+    
+    .timer {
+        width: 45px;
+        height: 45px;
+        font-size: 16px;
+        margin: 15px 0;
+    }
+    
+    .result {
+        margin-top: 12px;
+        padding: 10px;
+        font-size: 16px;
+    }
+    
+    .end-message {
+        margin-top: 15px;
+        padding: 15px;
+        font-size: 16px;
+    }
+    
+    .leaderboard-container {
+        margin-top: 20px;
+        padding-top: 15px;
+    }
+    
+    .leaderboard-container h3 {
+        font-size: 16px;
+        margin-bottom: 12px;
     }
     
     .leaderboard-table {
@@ -230,5 +458,50 @@ button:disabled {
     .leaderboard-table th,
     .leaderboard-table td {
         padding: 8px;
+    }
+    
+    .rank-col {
+        width: 30px;
+        font-size: 11px;
+    }
+    
+    .score-col {
+        width: 60px;
+        font-size: 11px;
+    }
+    
+    .name-col {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+@media (max-width: 360px) {
+    .container {
+        padding: 10px;
+        border-radius: 4px;
+    }
+    
+    h1 {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+    
+    input, button {
+        padding: 9px;
+        font-size: 15px;
+        min-height: 40px;
+    }
+    
+    .options button {
+        padding: 10px;
+        font-size: 13px;
+        min-height: 42px;
+    }
+    
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 6px;
+        font-size: 11px;
     }
 }
