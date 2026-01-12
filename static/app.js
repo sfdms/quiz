@@ -14,6 +14,18 @@ let currentQuestionIndex = 0;
 
 function renderQuestion(q) {
     if (!q) return;
+    
+    // Проверяем и нормализуем формат вопроса
+    if (!q.id && q.question_id) {
+        q.id = q.question_id;
+    }
+    
+    // Убеждаемся что вопрос имеет необходимые поля
+    if (!q.text || !q.options || !Array.isArray(q.options)) {
+        console.error('Некорректный формат вопроса:', q);
+        return;
+    }
+    
     currentQuestion = q;
     
     const gameEl = document.querySelector('.game-container') || (() => {
@@ -36,12 +48,15 @@ function renderQuestion(q) {
     gameEl.innerHTML = html;
     gameEl.style.display = 'block';
     
+    // Переподключаем обработчики кликов для новых кнопок
     document.querySelectorAll('.option').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const idx = parseInt(e.target.dataset.idx, 10);
             onAnswer(idx);
         });
     });
+    
+    console.log('Вопрос загружен:', q);
 }
 
 function startTimer(limitSec) {
@@ -51,8 +66,12 @@ function startTimer(limitSec) {
     timerId = setInterval(() => {
         timeLeft = Math.max(0, timeLeft - 0.1);
         updateTimerDisplay();
+        
+        // При time_left = 0 автоматически вызываем submitAnswer с time_left=0
         if (timeLeft <= 0) {
             clearInterval(timerId);
+            // Вызываем onAnswer с -1 (timeout), это означает что время истекло
+            console.log('Время вышло, отправляем ответ с time_left=0');
             onAnswer(-1);
         }
     }, 100);
@@ -101,33 +120,57 @@ async function startGame(nickname) {
 }
 
 async function onAnswer(selectedIdx) {
+    // Блокировка повторных кликов
     if (locked) return;
     locked = true;
     clearInterval(timerId);
     
     document.querySelectorAll('.option').forEach(btn => btn.disabled = true);
     
+    // Проверяем наличие question_id в currentQuestion
+    if (!currentQuestion || currentQuestion.id === undefined) {
+        console.error('Question не содержит id');
+        locked = false;
+        return;
+    }
+    
     const payload = {
-        question_id: currentQuestion?.id,
+        question_id: currentQuestion.id,
         answer: selectedIdx,
         time_left: Math.round(timeLeft * 10) / 10
     };
     
+    console.log('Отправляем ответ:', payload);
+    
     try {
+        // Вызов реального API сервера
         const res = await fetch('/api/submit_answer', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
         
-        if (!res.ok) throw new Error('Ошибка ответа');
+        if (!res.ok) {
+            console.error('Ошибка HTTP:', res.status);
+            throw new Error('Ошибка ответа');
+        }
         
         const data = await res.json();
+        console.log('Ответ сервера:', data);
+        
+        // Получаем gained_score и total_score от сервера
+        const gainedScore = data.score || 0;
+        const totalScore = data.total_score || 0;
         
         const gameEl = document.querySelector('.game-container');
         const resultDiv = document.createElement('div');
         resultDiv.className = data.correct ? 'result correct' : 'result wrong';
-        resultDiv.textContent = data.correct ? `✓ Верно! +${data.score}` : `✗ Неверно. +0`;
+        
+        // Показываем gained_score и total_score в UI
+        const resultText = data.correct 
+            ? `✓ Верно! +${gainedScore} очков (Всего: ${totalScore})`
+            : `✗ Неверно. +0 очков (Всего: ${totalScore})`;
+        resultDiv.textContent = resultText;
         gameEl.appendChild(resultDiv);
         
         if (data.next_question && data.next_question.id) {
@@ -138,7 +181,7 @@ async function onAnswer(selectedIdx) {
             startTimer(timeLimit);
         } else {
             await new Promise(resolve => setTimeout(resolve, 1200));
-            gameEl.innerHTML = '<div class="end-message">Игра окончена! Результат сохранён.</div>';
+            gameEl.innerHTML = `<div class="end-message">Игра окончена! Ваш результат: ${totalScore} очков</div>`;
             await refreshLeaderboard(true);
         }
     } catch (e) {
